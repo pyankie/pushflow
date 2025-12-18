@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  api-gateway:
+    build: ../services/api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+
+  dispatcher:
+    build: ../services/dispatcher
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - MONGO_URI=mongodb://mongo:27017/notifications
+
+  delivery:
+    build: ../services/delivery
+    ports:
+      - "3002:3002"
+    depends_on:
+      - dispatcher
+    environment:
+      - DELIVERY_PORT=3002
+
+volumes:
+  mongo_data:
