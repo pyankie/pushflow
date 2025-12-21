@@ -1,0 +1,2 @@
+ - `notifications.incoming` — API Gateway → Dispatcher
+ - `notifications.dispatch` — Dispatcher → Delivery
