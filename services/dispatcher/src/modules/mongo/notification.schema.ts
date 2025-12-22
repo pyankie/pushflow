@@ -12,7 +12,7 @@ export interface INotification {
 }
 
 export const NotificationSchema = new mongoose.Schema<INotification>({
-  notificationId: { type: String, required: true, index: true },
+  notificationId: { type: String, required: true, default: () => uuidv4() },
   senderId: { type: String, required: true },
   receiverId: { type: String, required: true },
   payload: { type: mongoose.Schema.Types.Mixed, required: true },
