@@ -20,20 +20,18 @@ import { NotificationService } from './notification.service';
         }
 
         try {
-          const instance = await mongoose.connect(uri);
+          await mongoose.connect(uri);
           console.log('MongoDB connection established');
-          // Return the Mongoose instance so injection works
-          return instance;
+          // Return the connection
+          return mongoose.connection;
         } catch (err) {
           console.error('Unable to connect to MongoDB!', err);
-          // Fail fast so the app doesn't continue without DB
           throw err;
         }
       },
     },
     NotificationService,
   ],
-  // Export if other modules need to inject it
   exports: ['MONGO_CONNECTION', NotificationService],
 })
 export default class MongoModule {}
