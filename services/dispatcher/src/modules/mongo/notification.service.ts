@@ -19,4 +19,19 @@ export class NotificationService {
   getNotificationModel(): Model<INotification> {
     return this.notificationModel;
   }
+
+  /**
+   * Save notification metadata (non-blocking, fire-and-forget).
+   * Errors are logged but not thrown.
+   */
+  saveNotificationAsync(data: Partial<INotification>): void {
+    this.notificationModel
+      .create(data)
+      .then(() => this.logger.log(`Notification ${data.notificationId} saved`))
+      .catch((err) =>
+        this.logger.error(
+          `Failed to save notification ${data.notificationId}: ${err.message}`,
+        ),
+      );
+  }
 }
