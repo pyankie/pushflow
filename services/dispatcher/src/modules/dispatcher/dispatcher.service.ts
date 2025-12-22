@@ -49,7 +49,7 @@ export class DispatcherService implements OnModuleInit {
     }
 
     // Validate required fields
-    if (!message.notificationId || !message.senderId || !message.payload) {
+    if (!message.receiverId || !message.senderId || !message.payload) {
       this.logger.error(`Invalid message format: ${JSON.stringify(message)}`);
       return;
     }
