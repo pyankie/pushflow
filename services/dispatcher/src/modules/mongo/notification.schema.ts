@@ -1,9 +1,7 @@
 import mongoose from 'mongoose';
 
-type Uuid = mongoose.Schema.Types.UUID;
-
 export interface INotification {
-  notificationId: Uuid;
+  notificationId: string;
   senderId: string;
   payload: unknown;
   metadata?: Record<string, unknown>;
@@ -12,10 +10,12 @@ export interface INotification {
 }
 
 export const NotificationSchema = new mongoose.Schema<INotification>({
-  notificationId: { type: mongoose.Schema.Types.UUID, required: true },
+  notificationId: { type: String, required: true, index: true },
   senderId: { type: String, required: true },
   payload: { type: mongoose.Schema.Types.Mixed, required: true },
-  metadata: { type: mongoose.Schema.Types.Mixed },
-  status: { type: String, required: true },
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  status: { type: String, required: true, default: 'pending' }, // Add default status
   timestamp: { type: Date, default: Date.now },
 });
+
+NotificationSchema.index({ notificationId: 1 }, { unique: true });
