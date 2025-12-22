@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import mongoose from 'mongoose';
+import { NotificationService } from './notification.service';
 
 @Module({
   providers: [
@@ -30,8 +31,9 @@ import mongoose from 'mongoose';
         }
       },
     },
+    NotificationService,
   ],
   // Export if other modules need to inject it
-  exports: ['MONGO_CONNECTION'],
+  exports: ['MONGO_CONNECTION', NotificationService],
 })
 export default class MongoModule {}
