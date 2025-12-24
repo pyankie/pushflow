@@ -48,8 +48,7 @@ export class DeliveryService implements OnModuleInit {
       !message.notificationId ||
       !message.senderId ||
       !message.receiverId ||
-      !message.payload ||
-      !message.status
+      !message.payload
     ) {
       this.logger.error(`Invalid message format: ${JSON.stringify(message)}`);
       return;
