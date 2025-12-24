@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
-import { IdedNotification, Notification } from 'src/dto/notification.dto';
-import { v4 as uuidv4 } from 'uuid';
+import { CreateNotificationDto } from 'src/dto/notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -12,16 +11,11 @@ export class NotificationService {
 
   constructor(private readonly redisService: RedisService) {}
 
-  async handleNotification(notification: Notification) {
-    const IdedNotification: IdedNotification = {
-      ...notification,
-      notificationId: uuidv4(),
-    };
-
-    await this.push(this.INCOMING_CHANNEL, IdedNotification);
+  async handleNotification(notification: CreateNotificationDto) {
+    await this.push(this.INCOMING_CHANNEL, notification);
   }
 
-  async push(channel: string, notification: IdedNotification) {
+  async push(channel: string, notification: CreateNotificationDto) {
     const publisher = this.redisService.getPublisher();
     await publisher.publish(channel, JSON.stringify(notification));
   }

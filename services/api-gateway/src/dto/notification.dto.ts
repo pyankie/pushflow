@@ -42,25 +42,6 @@ export class CreateNotificationDto extends createZodDto(
   timestamp: string;
 }
 
-// Response DTO
-export class NotificationDto extends createZodDto(CreateNotificationSchema) {
-  @ApiProperty({ description: 'ID of the sender' })
-  senderId: string;
-
-  @ApiProperty({ description: 'ID of the receiver' })
-  receiverId: string;
-
-  @ApiProperty({ description: 'Notification payload' })
-  payload: unknown;
-
-  @ApiPropertyOptional({ description: 'Optional metadata' })
-  metadata?: Record<string, unknown>;
-
-  @ApiProperty({ description: 'ISO 8601 timestamp' })
-  timestamp: string;
-}
-
-export type CreateNotification = z.infer<typeof CreateNotificationSchema>;
 export type Notification = z.infer<typeof CreateNotificationSchema>;
 export type IdedNotification = z.infer<typeof CreateNotificationSchema> & {
   notificationId: string;
