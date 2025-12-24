@@ -16,7 +16,7 @@ async function bootstrap() {
   });
 
   // const port = process.env.DELIVERY_PORT || 8989; // for local testing (dev) -- to avoid port conflicts with with docker itself
-  const port = process.env.DELIVERY_PORT || 3002; //production -- inside docker
+  const port = process.env.DELIVERY_PORT || 3002; //production -- inside docker  --see .env.example
   await app.listen(port);
 
   console.log(`Application is running on: http://localhost:${port}`);
