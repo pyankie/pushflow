@@ -18,7 +18,7 @@ services:
     depends_on:
       - redis
     environment:
-      - REDIS_HOST=localhost
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
 
   dispatcher:
@@ -29,9 +29,9 @@ services:
       - redis
       - mongo
     environment:
-      - REDIS_HOST=localhost
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MONGO_URI=mongodb://mongo:27017/notifications
+      - MONGO_URI=mongodb://mongo:27017/spf
 
   delivery:
     build: ../services/delivery
