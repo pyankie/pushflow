@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { NotificationService } from '../mongo/notification.service';
 import { INotification } from '../mongo/notification.schema';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DispatcherService implements OnModuleInit {
@@ -40,7 +41,7 @@ export class DispatcherService implements OnModuleInit {
 
     let message: Partial<INotification>;
     try {
-      message = JSON.parse(rawMessage);
+      message = JSON.parse(rawMessage) as Partial<INotification>;
     } catch (error) {
       this.logger.error(
         `Failed to parse message: ${rawMessage}. \n error: ${error}`,
@@ -48,20 +49,35 @@ export class DispatcherService implements OnModuleInit {
       return;
     }
 
-    // Validate required fields
+    // required fields
     if (!message.receiverId || !message.senderId || !message.payload) {
       this.logger.error(`Invalid message format: ${JSON.stringify(message)}`);
       return;
     }
 
+    const enhancedMessage: INotification = {
+      notificationId: uuidv4(),
+      senderId: message.senderId,
+      receiverId: message.receiverId,
+      payload: message.payload,
+      metadata: message.metadata,
+      status: 'pending',
+      timestamp: message.timestamp ? new Date(message.timestamp) : new Date(),
+    };
+
     const publisher = this.redisService.getPublisher();
 
-    // Publish to the dispatch channel (blocking - critical path)
-    await publisher.publish(this.DISPATCH_CHANNEL, JSON.stringify(message));
+    // (blocking - critical path)
+    await publisher.publish(
+      this.DISPATCH_CHANNEL,
+      JSON.stringify(enhancedMessage),
+    );
 
-    // Save to the database (non-blocking, fire-and-forget)
-    this.notificationService.saveNotificationAsync(message);
+    // (non-blocking, fire-and-forget)
+    this.notificationService.saveNotificationAsync(enhancedMessage);
 
-    this.logger.log(`Event dispatched to ${this.DISPATCH_CHANNEL}`);
+    this.logger.log(
+      `Event ${enhancedMessage.notificationId} enriched with status='pending' and dispatched to ${this.DISPATCH_CHANNEL}`,
+    );
   }
 }

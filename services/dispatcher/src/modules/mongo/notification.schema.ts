@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface INotification {
   notificationId: string;
@@ -12,7 +11,7 @@ export interface INotification {
 }
 
 export const NotificationSchema = new mongoose.Schema<INotification>({
-  notificationId: { type: String, required: true, default: () => uuidv4() },
+  notificationId: { type: String, required: true },
   senderId: { type: String, required: true },
   receiverId: { type: String, required: true },
   payload: { type: mongoose.Schema.Types.Mixed, required: true },
