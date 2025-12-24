@@ -1,3 +1,8 @@
+import * as dotenv from 'dotenv';
+import { resolve } from 'path';
+
+dotenv.config({ path: resolve(__dirname, '../.env') });
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { setupSwagger } from './swagger';
@@ -10,7 +15,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ZodValidationPipe());
 
-  const port = parseInt(process.env.GATEWAY_PORT!) || 9090;
+  const port = parseInt(process.env.GATEWAY_PORT!) || 3000;
 
   //this should come before listening
   setupSwagger(app, port);
