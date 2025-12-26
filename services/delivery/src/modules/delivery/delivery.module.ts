@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
-import { DeliveryService } from './delivery.service';
-import { ConnectionModule } from '../connections/connections.module';
-import { RedisModule } from '../redis/redis.module';
+import { Module } from '@nestjs/common'
+import { ConnectionModule } from '../connections/connections.module'
+import { RedisModule } from '../redis/redis.module'
+import { DeliveryService } from './delivery.service'
 
 @Module({
-  imports: [ConnectionModule, RedisModule],
-  providers: [DeliveryService],
-  exports: [DeliveryService],
+    imports: [ConnectionModule, RedisModule],
+    providers: [DeliveryService],
+    exports: [DeliveryService],
 })
 export class DeliveryModule {}

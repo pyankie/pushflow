@@ -1,31 +1,31 @@
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
+import * as dotenv from 'dotenv'
+import { resolve } from 'path'
 
-dotenv.config({ path: resolve(__dirname, '../.env') });
+dotenv.config({ path: resolve(__dirname, '../.env') })
 
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { setupSwagger } from './swagger';
-import { ZodValidationPipe } from 'nestjs-zod';
+import { NestFactory } from '@nestjs/core'
+import { ZodValidationPipe } from 'nestjs-zod'
+import { AppModule } from './app.module'
+import { setupSwagger } from './swagger'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule)
 
-  app.enableCors();
+    app.enableCors()
 
-  app.useGlobalPipes(new ZodValidationPipe());
+    app.useGlobalPipes(new ZodValidationPipe())
 
-  const port = parseInt(process.env.GATEWAY_PORT!) || 3000;
+    const port = parseInt(process.env.GATEWAY_PORT!) || 3000
 
-  //this should come before listening
-  setupSwagger(app, port);
+    //this should come before listening
+    setupSwagger(app, port)
 
-  await app.listen(port);
+    await app.listen(port)
 
-  console.log(`API Gateway is running on port ${port}`);
+    console.log(`API Gateway is running on port ${port}`)
 }
 
 bootstrap().catch((err) => {
-  console.error('Failed to start application:', err);
-  process.exit(1);
-});
+    console.error('Failed to start application:', err)
+    process.exit(1)
+})
