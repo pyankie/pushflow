@@ -34,4 +34,47 @@ export class NotificationService {
         ),
       );
   }
+
+  /**
+   * Get a notification by ID from the database.
+   */
+  async getNotificationById(
+    notificationId: string,
+  ): Promise<INotification | null> {
+    try {
+      const notification = await this.notificationModel.findOne({
+        notificationId,
+      });
+      return notification;
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to fetch notification ${notificationId}: ${errorMessage}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Update the status of a notification.
+   */
+  async updateNotificationStatus(
+    notificationId: string,
+    status: string,
+  ): Promise<void> {
+    try {
+      await this.notificationModel.updateOne({ notificationId }, { status });
+      this.logger.log(
+        `Updated notification ${notificationId} status to ${status}`,
+      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to update notification ${notificationId} status: ${errorMessage}`,
+      );
+      throw error;
+    }
+  }
 }
