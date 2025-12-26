@@ -7,10 +7,19 @@ import { INotification } from '../mongo/notification.schema';
 export class DispatcherService implements OnModuleInit {
   private readonly logger = new Logger(DispatcherService.name);
 
-  private readonly INCOMING_CHANNEL = 'notifications.incoming';
-  private readonly DISPATCH_CHANNEL = 'notifications.dispatch';
+  private readonly INCOMING_CHANNEL =
+    process.env.INCOMING_CHANNEL || 'notifications.incoming';
+
+  private readonly DISPATCH_CHANNEL =
+    process.env.DISPATCH_CHANNEL || 'notifications.dispatch';
 
   private readonly ACK_CHANNEL = process.env.ACK_CHANNEL || 'notifications.ack';
+
+  private readonly STATUS_QUERY_CHANNEL =
+    process.env.STATUS_QUERY_CHANNEL || 'notifications.status.query';
+
+  private readonly STATUS_RESPONSE_CHANNEL =
+    process.env.STATUS_RESPONSE_CHANNEL || 'notifications.status.response';
 
   constructor(
     private readonly redisService: RedisService,
@@ -22,6 +31,7 @@ export class DispatcherService implements OnModuleInit {
 
     await subscriber.subscribe(this.INCOMING_CHANNEL);
     await subscriber.subscribe(this.ACK_CHANNEL);
+    await subscriber.subscribe(this.STATUS_QUERY_CHANNEL);
     this.logger.log(
       `Subscribed to ${this.INCOMING_CHANNEL}, ${this.ACK_CHANNEL}, ${this.STATUS_QUERY_CHANNEL}`,
     );
@@ -43,6 +53,16 @@ export class DispatcherService implements OnModuleInit {
   ): Promise<void> {
     this.logger.log(`Received event on ${channel}: ${rawMessage}`);
 
+    if (channel === this.INCOMING_CHANNEL) {
+      await this.handleIncomingNotification(rawMessage);
+    } else if (channel === this.ACK_CHANNEL) {
+      await this.handleAcknowledgment(rawMessage);
+    } else if (channel === this.STATUS_QUERY_CHANNEL) {
+      await this.handleStatusQuery(rawMessage);
+    }
+  }
+
+  private async handleIncomingNotification(rawMessage: string): Promise<void> {
     let message: Partial<INotification>;
     try {
       message = JSON.parse(rawMessage) as INotification;
