@@ -73,11 +73,6 @@ mongo_data/
 postgres_data/
 redis_data/
 
-# Package manager
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # NestJS specific
 *.js.map
 *.d.ts
