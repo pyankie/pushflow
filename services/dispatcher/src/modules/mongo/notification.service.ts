@@ -64,7 +64,10 @@ export class NotificationService {
     status: string,
   ): Promise<void> {
     try {
-      await this.notificationModel.updateOne({ notificationId }, { status });
+      await this.notificationModel.updateOne(
+        { notificationId },
+        { status },
+      );
       this.logger.log(
         `Updated notification ${notificationId} status to ${status}`,
       );

@@ -5,11 +5,14 @@ import {
   HttpStatus,
   Logger,
   Post,
+  Get,
+  Param,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreateNotificationDto,
   NotificationCreationResponseDto,
+  NotificationStatusResponseDto,
 } from 'src/dto/notification.dto';
 import { NotificationService } from './notification.service';
 
@@ -37,5 +40,29 @@ export class NotificationController {
   async sendNotification(@Body() notification: CreateNotificationDto) {
     this.logger.log('Sending notification:', notification);
     return await this.notificationService.handleNotification(notification);
+  }
+
+  @ApiOperation({
+    summary: 'Get notification status',
+    description: 'Check the current status of a notification by its ID',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: NotificationStatusResponseDto,
+    description: 'Notification status retrieved successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid or missing notificationId',
+  })
+  @ApiResponse({
+    status: HttpStatus.GATEWAY_TIMEOUT,
+    description: 'Status query timed out',
+  })
+  @Get(':notificationId/status')
+  @HttpCode(HttpStatus.OK)
+  async getNotificationStatus(@Param('notificationId') notificationId: string) {
+    this.logger.log(`Querying status for notification: ${notificationId}`);
+    return await this.notificationService.getNotificationStatus(notificationId);
   }
 }
