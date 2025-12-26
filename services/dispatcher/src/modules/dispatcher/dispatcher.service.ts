@@ -1,179 +1,188 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { RedisService } from '../redis/redis.service';
-import { NotificationService } from '../mongo/notification.service';
-import { INotification } from '../mongo/notification.schema';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { INotification } from '../mongo/notification.schema'
+import { NotificationService } from '../mongo/notification.service'
+import { RedisService } from '../redis/redis.service'
 
 @Injectable()
 export class DispatcherService implements OnModuleInit {
-  private readonly logger = new Logger(DispatcherService.name);
+    private readonly logger = new Logger(DispatcherService.name)
 
-  private readonly INCOMING_CHANNEL =
-    process.env.INCOMING_CHANNEL || 'notifications.incoming';
+    private readonly INCOMING_CHANNEL =
+        process.env.INCOMING_CHANNEL || 'notifications.incoming'
 
-  private readonly DISPATCH_CHANNEL =
-    process.env.DISPATCH_CHANNEL || 'notifications.dispatch';
+    private readonly DISPATCH_CHANNEL =
+        process.env.DISPATCH_CHANNEL || 'notifications.dispatch'
 
-  private readonly ACK_CHANNEL = process.env.ACK_CHANNEL || 'notifications.ack';
+    private readonly ACK_CHANNEL =
+        process.env.ACK_CHANNEL || 'notifications.ack'
 
-  private readonly STATUS_QUERY_CHANNEL =
-    process.env.STATUS_QUERY_CHANNEL || 'notifications.status.query';
+    private readonly STATUS_QUERY_CHANNEL =
+        process.env.STATUS_QUERY_CHANNEL || 'notifications.status.query'
 
-  private readonly STATUS_RESPONSE_CHANNEL =
-    process.env.STATUS_RESPONSE_CHANNEL || 'notifications.status.response';
+    private readonly STATUS_RESPONSE_CHANNEL =
+        process.env.STATUS_RESPONSE_CHANNEL || 'notifications.status.response'
 
-  constructor(
-    private readonly redisService: RedisService,
-    private readonly notificationService: NotificationService,
-  ) {}
+    constructor(
+        private readonly redisService: RedisService,
+        private readonly notificationService: NotificationService,
+    ) {}
 
-  async onModuleInit() {
-    const subscriber = this.redisService.getSubscriber();
+    async onModuleInit() {
+        const subscriber = this.redisService.getSubscriber()
 
-    await subscriber.subscribe(this.INCOMING_CHANNEL);
-    await subscriber.subscribe(this.ACK_CHANNEL);
-    await subscriber.subscribe(this.STATUS_QUERY_CHANNEL);
-    this.logger.log(
-      `Subscribed to ${this.INCOMING_CHANNEL}, ${this.ACK_CHANNEL}, ${this.STATUS_QUERY_CHANNEL}`,
-    );
+        await subscriber.subscribe(this.INCOMING_CHANNEL)
+        await subscriber.subscribe(this.ACK_CHANNEL)
+        await subscriber.subscribe(this.STATUS_QUERY_CHANNEL)
+        this.logger.log(
+            `Subscribed to ${this.INCOMING_CHANNEL}, ${this.ACK_CHANNEL}, ${this.STATUS_QUERY_CHANNEL}`,
+        )
 
-    subscriber.on('message', (channel, message) => {
-      this.handleMessage(channel, message).catch((error: unknown) => {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        this.logger.error(
-          `Failed to handle message on ${channel}: ${errorMessage}`,
-        );
-      });
-    });
-  }
-
-  private async handleMessage(
-    channel: string,
-    rawMessage: string,
-  ): Promise<void> {
-    this.logger.log(`Received event on ${channel}: ${rawMessage}`);
-
-    if (channel === this.INCOMING_CHANNEL) {
-      await this.handleIncomingNotification(rawMessage);
-    } else if (channel === this.ACK_CHANNEL) {
-      await this.handleAcknowledgment(rawMessage);
-    } else if (channel === this.STATUS_QUERY_CHANNEL) {
-      await this.handleStatusQuery(rawMessage);
-    }
-  }
-
-  private async handleIncomingNotification(rawMessage: string): Promise<void> {
-    let message: Partial<INotification>;
-    try {
-      message = JSON.parse(rawMessage) as INotification;
-    } catch (error) {
-      this.logger.error(
-        `Failed to parse message: ${rawMessage}. \n error: ${error}`,
-      );
-      return;
+        subscriber.on('message', (channel, message) => {
+            this.handleMessage(channel, message).catch((error: unknown) => {
+                const errorMessage =
+                    error instanceof Error ? error.message : String(error)
+                this.logger.error(
+                    `Failed to handle message on ${channel}: ${errorMessage}`,
+                )
+            })
+        })
     }
 
-    // required fields
-    if (
-      !message.notificationId ||
-      !message.receiverId ||
-      !message.senderId ||
-      !message.payload
-    ) {
-      this.logger.error(`Invalid message format: ${JSON.stringify(message)}`);
-      return;
+    private async handleMessage(
+        channel: string,
+        rawMessage: string,
+    ): Promise<void> {
+        this.logger.log(`Received event on ${channel}: ${rawMessage}`)
+
+        if (channel === this.INCOMING_CHANNEL) {
+            await this.handleIncomingNotification(rawMessage)
+        } else if (channel === this.ACK_CHANNEL) {
+            await this.handleAcknowledgment(rawMessage)
+        } else if (channel === this.STATUS_QUERY_CHANNEL) {
+            await this.handleStatusQuery(rawMessage)
+        }
     }
 
-    const enhancedMessage: INotification = {
-      notificationId: message.notificationId,
-      senderId: message.senderId,
-      receiverId: message.receiverId,
-      payload: message.payload,
-      metadata: message.metadata,
-      status: 'pending',
-      timestamp: message.timestamp ? new Date(message.timestamp) : new Date(),
-    };
+    private async handleIncomingNotification(
+        rawMessage: string,
+    ): Promise<void> {
+        let message: Partial<INotification>
+        try {
+            message = JSON.parse(rawMessage) as INotification
+        } catch (error) {
+            this.logger.error(
+                `Failed to parse message: ${rawMessage}. \n error: ${error}`,
+            )
+            return
+        }
 
-    const publisher = this.redisService.getPublisher();
+        // required fields
+        if (
+            !message.notificationId ||
+            !message.receiverId ||
+            !message.senderId ||
+            !message.payload
+        ) {
+            this.logger.error(
+                `Invalid message format: ${JSON.stringify(message)}`,
+            )
+            return
+        }
 
-    // (blocking - critical path)
-    await publisher.publish(
-      this.DISPATCH_CHANNEL,
-      JSON.stringify(enhancedMessage),
-    );
+        const enhancedMessage: INotification = {
+            notificationId: message.notificationId,
+            senderId: message.senderId,
+            receiverId: message.receiverId,
+            payload: message.payload,
+            metadata: message.metadata,
+            status: 'pending',
+            timestamp: message.timestamp
+                ? new Date(message.timestamp)
+                : new Date(),
+        }
 
-    // (non-blocking, fire-and-forget)
-    this.notificationService.saveNotificationAsync(enhancedMessage);
+        const publisher = this.redisService.getPublisher()
 
-    this.logger.log(
-      `Event ${enhancedMessage.notificationId} enriched with status='pending' and dispatched to ${this.DISPATCH_CHANNEL}`,
-    );
-  }
+        // (blocking - critical path)
+        await publisher.publish(
+            this.DISPATCH_CHANNEL,
+            JSON.stringify(enhancedMessage),
+        )
 
-  private async handleAcknowledgment(notificationId: string): Promise<void> {
-    this.logger.log(
-      `Received acknowledgment for notification: ${notificationId}`,
-    );
+        // (non-blocking, fire-and-forget)
+        this.notificationService.saveNotificationAsync(enhancedMessage)
 
-    try {
-      await this.notificationService.updateNotificationStatus(
-        notificationId,
-        'delivered',
-      );
-      this.logger.log(
-        `Updated notification ${notificationId} status to 'delivered'`,
-      );
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to update notification status: ${errorMessage}`,
-      );
-    }
-  }
-
-  private async handleStatusQuery(rawMessage: string): Promise<void> {
-    let query: { correlationId: string; notificationId: string };
-    try {
-      query = JSON.parse(rawMessage);
-    } catch (error) {
-      this.logger.error(`Failed to parse status query: ${rawMessage}`);
-      return;
+        this.logger.log(
+            `Event ${enhancedMessage.notificationId} enriched with status='pending' and dispatched to ${this.DISPATCH_CHANNEL}`,
+        )
     }
 
-    const { correlationId, notificationId } = query;
+    private async handleAcknowledgment(notificationId: string): Promise<void> {
+        this.logger.log(
+            `Received acknowledgment for notification: ${notificationId}`,
+        )
 
-    try {
-      const notification =
-        await this.notificationService.getNotificationById(notificationId);
-
-      if (!notification) {
-        this.logger.warn(`Notification not found: ${notificationId}`);
-        return;
-      }
-
-      const response = {
-        correlationId,
-        notificationId: notification.notificationId,
-        status: notification.status,
-        timestamp: notification.timestamp.toISOString(),
-      };
-
-      const publisher = this.redisService.getPublisher();
-      await publisher.publish(
-        this.STATUS_RESPONSE_CHANNEL,
-        JSON.stringify(response),
-      );
-
-      this.logger.log(
-        `Sent status response for notification ${notificationId}`,
-      );
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to handle status query for ${notificationId}: ${errorMessage}`,
-      );
+        try {
+            await this.notificationService.updateNotificationStatus(
+                notificationId,
+                'delivered',
+            )
+            this.logger.log(
+                `Updated notification ${notificationId} status to 'delivered'`,
+            )
+        } catch (error: unknown) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to update notification status: ${errorMessage}`,
+            )
+        }
     }
-  }
+
+    private async handleStatusQuery(rawMessage: string): Promise<void> {
+        let query: { correlationId: string; notificationId: string }
+        try {
+            query = JSON.parse(rawMessage)
+        } catch (_error) {
+            this.logger.error(`Failed to parse status query: ${rawMessage}`)
+            return
+        }
+
+        const { correlationId, notificationId } = query
+
+        try {
+            const notification =
+                await this.notificationService.getNotificationById(
+                    notificationId,
+                )
+
+            if (!notification) {
+                this.logger.warn(`Notification not found: ${notificationId}`)
+                return
+            }
+
+            const response = {
+                correlationId,
+                notificationId: notification.notificationId,
+                status: notification.status,
+                timestamp: notification.timestamp.toISOString(),
+            }
+
+            const publisher = this.redisService.getPublisher()
+            await publisher.publish(
+                this.STATUS_RESPONSE_CHANNEL,
+                JSON.stringify(response),
+            )
+
+            this.logger.log(
+                `Sent status response for notification ${notificationId}`,
+            )
+        } catch (error: unknown) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to handle status query for ${notificationId}: ${errorMessage}`,
+            )
+        }
+    }
 }

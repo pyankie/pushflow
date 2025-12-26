@@ -1,0 +1,26 @@
+{
+  "name": "pushflow",
+  "version": "1.0.0",
+  "description": "A distributed, event-driven, real-time push notification framework built using microservices, Redis Pub/Sub, and WebSocket-based delivery.",
+  "homepage": "https://github.com/pyankie/pushflow#readme",
+  "bugs": {
+    "url": "https://github.com/pyankie/pushflow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pyankie/pushflow.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10"
+  }
+}
