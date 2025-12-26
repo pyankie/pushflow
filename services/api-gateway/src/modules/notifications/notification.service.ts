@@ -38,7 +38,7 @@ export class NotificationService implements OnModuleInit {
 
   constructor(private readonly redisService: RedisService) {}
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit() {
     this.initializeStatusResponseListener();
   }
 
