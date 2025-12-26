@@ -2,7 +2,6 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { NotificationService } from '../mongo/notification.service';
 import { INotification } from '../mongo/notification.schema';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DispatcherService implements OnModuleInit {
@@ -41,7 +40,7 @@ export class DispatcherService implements OnModuleInit {
 
     let message: Partial<INotification>;
     try {
-      message = JSON.parse(rawMessage) as Partial<INotification>;
+      message = JSON.parse(rawMessage) as INotification;
     } catch (error) {
       this.logger.error(
         `Failed to parse message: ${rawMessage}. \n error: ${error}`,
@@ -50,13 +49,18 @@ export class DispatcherService implements OnModuleInit {
     }
 
     // required fields
-    if (!message.receiverId || !message.senderId || !message.payload) {
+    if (
+      !message.notificationId ||
+      !message.receiverId ||
+      !message.senderId ||
+      !message.payload
+    ) {
       this.logger.error(`Invalid message format: ${JSON.stringify(message)}`);
       return;
     }
 
     const enhancedMessage: INotification = {
-      notificationId: uuidv4(),
+      notificationId: message.notificationId,
       senderId: message.senderId,
       receiverId: message.receiverId,
       payload: message.payload,
