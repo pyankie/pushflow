@@ -17,10 +17,18 @@ export class NotificationService {
 
   async handleNotification(notification: CreateNotificationDto) {
     const enhancedNotification: IdedNotification = {
-      notificationId: uuidv4(),
       ...notification,
+      notificationId: uuidv4(),
+      timestamp: notification.timestamp || new Date().toISOString(),
     };
+
     await this.push(this.INCOMING_CHANNEL, enhancedNotification);
+
+    return {
+      notificationId: enhancedNotification.notificationId,
+      timestamp: enhancedNotification.timestamp,
+      status: 'ACCEPTED',
+    };
   }
 
   async push(channel: string, notification: IdedNotification) {
