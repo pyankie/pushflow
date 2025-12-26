@@ -6,8 +6,11 @@ import {
   Logger,
   Post,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreateNotificationDto } from 'src/dto/notification.dto';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  CreateNotificationDto,
+  NotificationCreationResponseDto,
+} from 'src/dto/notification.dto';
 import { NotificationService } from './notification.service';
 
 @ApiTags('notifications')
@@ -18,17 +21,21 @@ export class NotificationController {
 
   @ApiOperation({
     summary: 'Send a notification',
-    description:
-      'Create and send a notification to a receiver. The notificationId and timestamp are auto-generated if not provided.',
+    description: 'Create and send a notification to a receiver. ',
   })
   @ApiBody({
     type: CreateNotificationDto,
     description: 'Notification details',
   })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    type: NotificationCreationResponseDto,
+    description: 'Notification created successfully',
+  })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async sendNotification(@Body() notification: CreateNotificationDto) {
     this.logger.log('Sending notification:', notification);
-    await this.notificationService.handleNotification(notification);
+    return await this.notificationService.handleNotification(notification);
   }
 }
