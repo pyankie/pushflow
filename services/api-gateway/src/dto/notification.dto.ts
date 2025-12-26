@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
+import { IsEnum, IsString } from 'class-validator';
+
+enum Status {
+  ACCEPTED = 'accepted',
+  SENT = 'sent',
+  FAILED = 'failed',
+  PENDING = 'pending',
+}
 
 export const CreateNotificationSchema = z.object({
   senderId: z.string().min(1, 'senderId is required'),
@@ -40,6 +48,30 @@ export class CreateNotificationDto extends createZodDto(
     default: new Date().toISOString(),
   })
   timestamp: string;
+}
+
+export class NotificationCreationResponseDto {
+  @ApiProperty({
+    description: 'Unique identifier for the notification',
+    example: '31aaf24f-bccb-4419-b0ee-47c72963b985',
+  })
+  @IsString()
+  notificationId: string;
+
+  @ApiProperty({
+    description: 'ISO 8601 timestamp when the notification was created',
+    example: '2024-01-15T10:30:00Z',
+  })
+  @IsString()
+  timestamp: string;
+
+  @ApiProperty({
+    description: 'Current status of the notification',
+    example: Status.ACCEPTED,
+    enum: Status,
+  })
+  @IsEnum(Status)
+  status: Status;
 }
 
 export type Notification = z.infer<typeof CreateNotificationSchema>;
