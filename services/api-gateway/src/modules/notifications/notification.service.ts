@@ -1,8 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  GatewayTimeoutException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import {
   CreateNotificationDto,
   IdedNotification,
+  NotificationStatusResponseDto,
 } from 'src/dto/notification.dto';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +23,56 @@ export class NotificationService implements OnModuleInit {
   private readonly STATUS_QUERY_CHANNEL =
     process.env.STATUS_QUERY_CHANNEL || 'notifications.status.query';
 
+  private readonly STATUS_RESPONSE_CHANNEL =
+    process.env.STATUS_RESPONSE_CHANNEL || 'notifications.status.response';
+
+  private readonly QUERY_TIMEOUT_MS = parseInt(
+    process.env.QUERY_TIMEOUT_MS || '5000',
+    10,
+  );
+
+  private pendingQueries = new Map<
+    string,
+    { resolve: (value: any) => void; reject: (error: Error) => void }
+  >();
+
   constructor(private readonly redisService: RedisService) {}
+
+  async onModuleInit(): Promise<void> {
+    this.initializeStatusResponseListener();
+  }
+
+  private initializeStatusResponseListener(): void {
+    const subscriber = this.redisService.getSubscriber();
+    subscriber
+      .subscribe(this.STATUS_RESPONSE_CHANNEL)
+      .catch((error: unknown) => {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `Failed to subscribe to status response channel: ${errorMessage}`,
+        );
+      });
+
+    subscriber.on('message', (channel, message) => {
+      if (channel === this.STATUS_RESPONSE_CHANNEL) {
+        try {
+          const response = JSON.parse(message);
+          const { correlationId } = response;
+
+          if (this.pendingQueries.has(correlationId)) {
+            const { resolve } = this.pendingQueries.get(correlationId)!;
+            this.pendingQueries.delete(correlationId);
+            resolve(response);
+          }
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          this.logger.error(`Failed to parse status response: ${errorMessage}`);
+        }
+      }
+    });
+  }
 
   async handleNotification(notification: CreateNotificationDto) {
     const enhancedNotification: IdedNotification = {
