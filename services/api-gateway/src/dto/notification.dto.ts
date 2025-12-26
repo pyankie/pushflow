@@ -74,6 +74,30 @@ export class NotificationCreationResponseDto {
   status: Status;
 }
 
+export class NotificationStatusResponseDto {
+  @ApiProperty({
+    description: 'Unique identifier for the notification',
+    example: '31aaf24f-bccb-4419-b0ee-47c72963b985',
+  })
+  @IsString()
+  notificationId: string;
+
+  @ApiProperty({
+    description: 'Current status of the notification',
+    example: 'pending',
+    enum: ['pending', 'delivered', 'failed'],
+  })
+  @IsString()
+  status: string;
+
+  @ApiProperty({
+    description: 'ISO 8601 timestamp of the notification',
+    example: '2024-01-15T10:30:00Z',
+  })
+  @IsString()
+  timestamp: string;
+}
+
 export type Notification = z.infer<typeof CreateNotificationSchema>;
 export type IdedNotification = z.infer<typeof CreateNotificationSchema> & {
   notificationId: string;
