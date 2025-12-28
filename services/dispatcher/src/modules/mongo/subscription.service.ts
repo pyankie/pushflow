@@ -24,10 +24,15 @@ export class SubscriptionService {
                 { $setOnInsert: { receiverId, topicId } },
                 { upsert: true },
             )
-            this.logger.log(`Subscribed receiverId=${receiverId} to topicId=${topicId}`)
+            this.logger.log(
+                `Subscribed receiverId=${receiverId} to topicId=${topicId}`,
+            )
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error)
-            this.logger.error(`Failed to subscribe receiverId=${receiverId} to topicId=${topicId}: ${message}`)
+            const message =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to subscribe receiverId=${receiverId} to topicId=${topicId}: ${message}`,
+            )
             throw error
         }
     }
@@ -35,10 +40,15 @@ export class SubscriptionService {
     async unsubscribe(receiverId: string, topicId: string): Promise<void> {
         try {
             await this.subscriptionModel.deleteOne({ receiverId, topicId })
-            this.logger.log(`Unsubscribed receiverId=${receiverId} from topicId=${topicId}`)
+            this.logger.log(
+                `Unsubscribed receiverId=${receiverId} from topicId=${topicId}`,
+            )
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error)
-            this.logger.error(`Failed to unsubscribe receiverId=${receiverId} from topicId=${topicId}: ${message}`)
+            const message =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to unsubscribe receiverId=${receiverId} from topicId=${topicId}: ${message}`,
+            )
             throw error
         }
     }
@@ -51,8 +61,11 @@ export class SubscriptionService {
                 .lean()
             return docs.map((d) => d.topicId)
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error)
-            this.logger.error(`Failed to fetch subscriptions for receiverId=${receiverId}: ${message}`)
+            const message =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to fetch subscriptions for receiverId=${receiverId}: ${message}`,
+            )
             throw error
         }
     }

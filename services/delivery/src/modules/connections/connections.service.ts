@@ -68,7 +68,7 @@ export class ConnectionService
       topics: string[];
     };
     try {
-      payload = JSON.parse(rawMessage);
+      payload = await JSON.parse(rawMessage);
     } catch (_error) {
       this.logger.error(`Failed to parse topic query response: ${rawMessage}`);
       return;
