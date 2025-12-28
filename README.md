@@ -3,8 +3,6 @@
 **PushFlow** is a standalone, real-time push notification framework built using a microservice architecture.  
 It is designed to demonstrate clear service boundaries, asynchronous communication, and real-time message delivery using WebSockets.
 
-This project was developed as part of a **Distributed Systems** course and focuses on correctness, simplicity, and architectural clarity rather than cloud-scale SaaS complexity.
-
 ---
 
 ## Overview
