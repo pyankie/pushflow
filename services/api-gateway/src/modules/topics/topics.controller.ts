@@ -2,12 +2,12 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common'
 import {
     ApiBody,
     ApiOperation,
+    ApiProperty,
     ApiResponse,
     ApiTags,
-    ApiProperty,
 } from '@nestjs/swagger'
-import { TopicsService } from './topics.service'
 import { IsNotEmpty, IsString } from 'class-validator'
+import { TopicsService } from './topics.service'
 
 class SubscribeDto {
     @ApiProperty({ description: 'ID of the receiver', example: 'user-123' })
