@@ -8,7 +8,7 @@ import { SubscriptionService } from './subscription.service'
         {
             provide: 'MONGO_CONNECTION',
             useFactory: async () => {
-                const uri = process.env.MONGO_URL || 'mongodb://localhost/spf'
+                const uri = process.env.MONGO_URL || 'mongodb://mongo/spf'
 
                 // Only include credentials if provided
                 const user = process.env.MONGO_USER

@@ -1,16 +1,14 @@
 services:
   redis:
-    image: redis:7
+    image: redis:8-alpine
     ports:
       - "6379:6379"
-
   mongo:
-    image: mongo:7
+    image: mongo:latest
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-
   api-gateway:
     build: ../services/api-gateway
     ports:
@@ -20,7 +18,6 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-
   dispatcher:
     build: ../services/dispatcher
     ports:
@@ -32,7 +29,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - MONGO_URI=mongodb://mongo:27017/spf
-
   delivery:
     build: ../services/delivery
     ports:
@@ -41,6 +37,5 @@ services:
       - dispatcher
     environment:
       - DELIVERY_PORT=3002
-
 volumes:
   mongo_data:
