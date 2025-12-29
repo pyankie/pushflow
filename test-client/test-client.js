@@ -1,6 +1,6 @@
 const io = require('socket.io-client')
 
-const port = process.env.PORT || 8989
+const port = process.env.PORT || 3002
 const receiverId = process.argv[2] || 'user-123'
 const serverUrl = process.argv[3] || `http://localhost:${port}`
 

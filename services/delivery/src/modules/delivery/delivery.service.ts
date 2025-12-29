@@ -43,12 +43,12 @@ export class DeliveryService implements OnModuleInit {
             return
         }
 
-        // Validate required fields
+        // Validate required fields (either direct or topic-based)
         if (
             !message.notificationId ||
             !message.senderId ||
-            !message.receiverId ||
-            !message.payload
+            !message.payload ||
+            (!message.receiverId && !message.topicId)
         ) {
             this.logger.error(
                 `Invalid message format: ${JSON.stringify(message)}`,
@@ -56,9 +56,18 @@ export class DeliveryService implements OnModuleInit {
             return
         }
 
-        const { receiverId, ...rest } = message
+        if (message.topicId) {
+            const { topicId, receiverId: _rid, ...rest } = message
+            this.connectionService.server.to(topicId).emit('push', rest)
+            const publisher = this.redisService.getPublisher()
+            await publisher.publish('notifications.ack', message.notificationId)
+            this.logger.log(`Notification multicast to topicId: ${topicId}`)
+            return
+        }
 
-        // Get the socket for the receiver
+        const receiverId = message.receiverId as string
+        const { topicId: _tid, ...rest } = message
+
         const socketId = this.registry.getSocket(receiverId)
         if (!socketId) {
             this.logger.error(
@@ -67,7 +76,6 @@ export class DeliveryService implements OnModuleInit {
             return
         }
 
-        // Emit the event to the specific socket
         const socket =
             this.connectionService.server.sockets.sockets.get(socketId)
         if (!socket) {

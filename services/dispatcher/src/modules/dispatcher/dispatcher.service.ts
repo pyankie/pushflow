@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { INotification } from '../mongo/notification.schema'
 import { NotificationService } from '../mongo/notification.service'
+import { SubscriptionService } from '../mongo/subscription.service'
 import { RedisService } from '../redis/redis.service'
 
 @Injectable()
@@ -22,9 +23,22 @@ export class DispatcherService implements OnModuleInit {
     private readonly STATUS_RESPONSE_CHANNEL =
         process.env.STATUS_RESPONSE_CHANNEL || 'notifications.status.response'
 
+    private readonly TOPIC_SUBSCRIBE_CHANNEL =
+        process.env.TOPIC_SUBSCRIBE_CHANNEL || 'topics.subscribe'
+
+    private readonly TOPIC_UNSUBSCRIBE_CHANNEL =
+        process.env.TOPIC_UNSUBSCRIBE_CHANNEL || 'topics.unsubscribe'
+
+    private readonly TOPICS_QUERY_CHANNEL =
+        process.env.TOPICS_QUERY_CHANNEL || 'topics.query'
+
+    private readonly TOPICS_QUERY_RESPONSE_CHANNEL =
+        process.env.TOPICS_QUERY_RESPONSE_CHANNEL || 'topics.query.response'
+
     constructor(
         private readonly redisService: RedisService,
         private readonly notificationService: NotificationService,
+        private readonly subscriptionService: SubscriptionService,
     ) {}
 
     async onModuleInit() {
@@ -33,8 +47,11 @@ export class DispatcherService implements OnModuleInit {
         await subscriber.subscribe(this.INCOMING_CHANNEL)
         await subscriber.subscribe(this.ACK_CHANNEL)
         await subscriber.subscribe(this.STATUS_QUERY_CHANNEL)
+        await subscriber.subscribe(this.TOPIC_SUBSCRIBE_CHANNEL)
+        await subscriber.subscribe(this.TOPIC_UNSUBSCRIBE_CHANNEL)
+        await subscriber.subscribe(this.TOPICS_QUERY_CHANNEL)
         this.logger.log(
-            `Subscribed to ${this.INCOMING_CHANNEL}, ${this.ACK_CHANNEL}, ${this.STATUS_QUERY_CHANNEL}`,
+            `Subscribed to ${this.INCOMING_CHANNEL}, ${this.ACK_CHANNEL}, ${this.STATUS_QUERY_CHANNEL}, ${this.TOPIC_SUBSCRIBE_CHANNEL}, ${this.TOPIC_UNSUBSCRIBE_CHANNEL}, ${this.TOPICS_QUERY_CHANNEL}`,
         )
 
         subscriber.on('message', (channel, message) => {
@@ -60,6 +77,12 @@ export class DispatcherService implements OnModuleInit {
             await this.handleAcknowledgment(rawMessage)
         } else if (channel === this.STATUS_QUERY_CHANNEL) {
             await this.handleStatusQuery(rawMessage)
+        } else if (channel === this.TOPIC_SUBSCRIBE_CHANNEL) {
+            await this.handleTopicSubscribe(rawMessage)
+        } else if (channel === this.TOPIC_UNSUBSCRIBE_CHANNEL) {
+            await this.handleTopicUnsubscribe(rawMessage)
+        } else if (channel === this.TOPICS_QUERY_CHANNEL) {
+            await this.handleTopicQuery(rawMessage)
         }
     }
 
@@ -79,9 +102,9 @@ export class DispatcherService implements OnModuleInit {
         // required fields
         if (
             !message.notificationId ||
-            !message.receiverId ||
             !message.senderId ||
-            !message.payload
+            !message.payload ||
+            (!message.receiverId && !message.topicId)
         ) {
             this.logger.error(
                 `Invalid message format: ${JSON.stringify(message)}`,
@@ -93,6 +116,7 @@ export class DispatcherService implements OnModuleInit {
             notificationId: message.notificationId,
             senderId: message.senderId,
             receiverId: message.receiverId,
+            topicId: message.topicId,
             payload: message.payload,
             metadata: message.metadata,
             status: 'pending',
@@ -182,6 +206,86 @@ export class DispatcherService implements OnModuleInit {
                 error instanceof Error ? error.message : String(error)
             this.logger.error(
                 `Failed to handle status query for ${notificationId}: ${errorMessage}`,
+            )
+        }
+    }
+
+    private async handleTopicSubscribe(rawMessage: string): Promise<void> {
+        let payload: { receiverId: string; topicId: string }
+        try {
+            payload = JSON.parse(rawMessage)
+        } catch (_error) {
+            this.logger.error(
+                `Failed to parse subscribe payload: ${rawMessage}`,
+            )
+            return
+        }
+
+        const { receiverId, topicId } = payload
+        if (!receiverId || !topicId) {
+            this.logger.error(
+                `Invalid subscribe payload: ${JSON.stringify(payload)}`,
+            )
+            return
+        }
+
+        await this.subscriptionService.subscribe(receiverId, topicId)
+    }
+
+    private async handleTopicUnsubscribe(rawMessage: string): Promise<void> {
+        let payload: { receiverId: string; topicId: string }
+        try {
+            payload = JSON.parse(rawMessage)
+        } catch (_error) {
+            this.logger.error(
+                `Failed to parse unsubscribe payload: ${rawMessage}`,
+            )
+            return
+        }
+
+        const { receiverId, topicId } = payload
+        if (!receiverId || !topicId) {
+            this.logger.error(
+                `Invalid unsubscribe payload: ${JSON.stringify(payload)}`,
+            )
+            return
+        }
+
+        await this.subscriptionService.unsubscribe(receiverId, topicId)
+    }
+
+    private async handleTopicQuery(rawMessage: string): Promise<void> {
+        let payload: { receiverId: string; correlationId: string }
+        try {
+            payload = JSON.parse(rawMessage)
+        } catch (_error) {
+            this.logger.error(
+                `Failed to parse topic query payload: ${rawMessage}`,
+            )
+            return
+        }
+
+        const { receiverId, correlationId } = payload
+        if (!receiverId || !correlationId) {
+            this.logger.error(
+                `Invalid topic query payload: ${JSON.stringify(payload)}`,
+            )
+            return
+        }
+
+        try {
+            const topics =
+                await this.subscriptionService.getSubscriptions(receiverId)
+            const publisher = this.redisService.getPublisher()
+            await publisher.publish(
+                this.TOPICS_QUERY_RESPONSE_CHANNEL,
+                JSON.stringify({ correlationId, receiverId, topics }),
+            )
+        } catch (error: unknown) {
+            const message =
+                error instanceof Error ? error.message : String(error)
+            this.logger.error(
+                `Failed to resolve topics for receiverId=${receiverId}: ${message}`,
             )
         }
     }

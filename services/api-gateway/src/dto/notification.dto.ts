@@ -10,16 +10,22 @@ enum Status {
     PENDING = 'pending',
 }
 
-export const CreateNotificationSchema = z.object({
-    senderId: z.string().min(1, 'senderId is required'),
-    receiverId: z.string().min(1, 'receiverId is required'),
-    payload: z.unknown(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
-    timestamp: z
-        .string()
-        .datetime()
-        .default(() => new Date().toISOString()),
-})
+export const CreateNotificationSchema = z
+    .object({
+        senderId: z.string().min(1, 'senderId is required'),
+        receiverId: z.string().min(1).optional(),
+        topicId: z.string().min(1).optional(),
+        payload: z.unknown(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+        timestamp: z
+            .string()
+            .datetime()
+            .default(() => new Date().toISOString()),
+    })
+    .refine((data) => data.receiverId || data.topicId, {
+        message: 'Either receiverId or topicId must be provided',
+        path: ['receiverId'],
+    })
 
 export class CreateNotificationDto extends createZodDto(
     CreateNotificationSchema,
@@ -27,8 +33,17 @@ export class CreateNotificationDto extends createZodDto(
     @ApiProperty({ description: 'ID of the sender', example: 'user-123' })
     senderId: string
 
-    @ApiProperty({ description: 'ID of the receiver', example: 'user-456' })
-    receiverId: string
+    @ApiPropertyOptional({
+        description: 'ID of the receiver',
+        example: 'user-456',
+    })
+    receiverId?: string
+
+    @ApiPropertyOptional({
+        description: 'Optional topic id for multicast',
+        example: 'topic-123',
+    })
+    topicId?: string
 
     @ApiProperty({
         description: 'Notification payload - can be any type',

@@ -14,7 +14,7 @@ export class RedisService implements OnModuleInit, OnApplicationShutdown {
 
     async onModuleInit() {
         const redisConfig = {
-            host: process.env.REDIS_HOST || 'localhost',
+            host: process.env.REDIS_HOST || 'redis',
             port: parseInt(process.env.REDIS_PORT || '6379', 10),
         }
 

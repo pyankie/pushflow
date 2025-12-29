@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common'
 import mongoose from 'mongoose'
 import { NotificationService } from './notification.service'
+import { SubscriptionService } from './subscription.service'
 
 @Module({
     providers: [
         {
             provide: 'MONGO_CONNECTION',
             useFactory: async () => {
-                const uri = process.env.MONGO_URL || 'mongodb://localhost/spf'
+                const uri = process.env.MONGO_URL || 'mongodb://mongo/spf'
 
                 // Only include credentials if provided
                 const user = process.env.MONGO_USER
@@ -31,7 +32,8 @@ import { NotificationService } from './notification.service'
             },
         },
         NotificationService,
+        SubscriptionService,
     ],
-    exports: ['MONGO_CONNECTION', NotificationService],
+    exports: ['MONGO_CONNECTION', NotificationService, SubscriptionService],
 })
 export default class MongoModule {}
